@@ -1,0 +1,4 @@
+- [project-memory-course-context](project-memory-course-context.md) — Context of the current project: learning about the memory system
+- [project-windows-environment](project-windows-environment.md) — User is running in a Windows environment with bash unavailable
+- [project-working-directory](project-working-directory.md) — Current working directory for the memory project
+- [user-preference-catgirl-tone](user-preference-catgirl-tone.md) — User wants assistant to use a catgirl tone in conversations
