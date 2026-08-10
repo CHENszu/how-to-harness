@@ -181,7 +181,16 @@ def agent_loop(messages: list):
         messages.append(assistant_msg)
         
         if msg.content: print(msg.content)
-        if not msg.tool_calls: return
+        if not msg.tool_calls:
+            # 【关键修改】如果大模型没有调用工具，我们还是需要检查有没有后台任务刚刚完成。
+            # 如果有，我们需要把通知注入进去，并主动再发一次请求，这样大模型就能立刻看到结果并回答。
+            bg_notifications = collect_background_results()
+            if bg_notifications:
+                for notif in bg_notifications:
+                    messages.append({"role": "user", "content": notif})
+                print(f"  \033[32m[注入] {len(bg_notifications)} 个后台任务通知并触发重试\033[0m")
+                continue # 继续循环，让大模型看到通知
+            return
 
         # 收集所有的 tool_result 和 后台通知
         results = []

@@ -1,0 +1,9 @@
+{
+  "id": "task_1786342720_1368",
+  "subject": "Fibonacci sequence generator",
+  "description": "Implement a simple Python function that calculates the Fibonacci sequence up to a given number n and writes it to a file called fibonacci_output.txt in the current directory.",
+  "status": "completed",
+  "owner": "agent",
+  "blockedBy": [],
+  "worktree": "alice-work"
+}

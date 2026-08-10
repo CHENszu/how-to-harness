@@ -1,0 +1,8 @@
+{
+  "id": "task_1786328246_5068",
+  "subject": "设计数据库表结构",
+  "description": "设计博客系统的数据库表结构，包括用户表、文章表、评论表等。",
+  "status": "pending",
+  "owner": null,
+  "blockedBy": []
+}

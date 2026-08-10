@@ -1,0 +1,10 @@
+{
+  "id": "task_1786328247_1960",
+  "subject": "开发API接口",
+  "description": "基于数据库表结构，开发博客系统的API接口。",
+  "status": "pending",
+  "owner": null,
+  "blockedBy": [
+    "task_1786328246_5068"
+  ]
+}

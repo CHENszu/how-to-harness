@@ -1,0 +1,9 @@
+[
+  {
+    "id": "cron_488623",
+    "cron": "*/10 * * * *",
+    "prompt": "\u6253\u5370\u5f53\u524d\u65f6\u95f4",
+    "recurring": true,
+    "durable": true
+  }
+]
