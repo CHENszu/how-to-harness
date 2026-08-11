@@ -7,6 +7,12 @@
 
 💼 **Learn Harness and Hermes** | 🎓 **慢就是快：从零手写 Agent 底层框架**
 
+<br>
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)
+![Conda](https://img.shields.io/badge/conda-harness-44A833?style=flat-square&logo=anaconda&logoColor=white)
+![Agent](https://img.shields.io/badge/Framework-OpenHarness-orange?style=flat-square&logo=dependabot&logoColor=white)
+
 </div>
 
 ---
@@ -31,7 +37,7 @@
 * **07_long_term_memory** (长期记忆)：跨会话的记忆持久化系统。使 Agent 能够沉淀项目经验、代码规范和用户偏好。
 * **08_permission_control** (权限管控)：敏感操作拦截机制。实现了 `PermissionChecker` 进行敏感路径过滤，并引入三种运行模式：`DEFAULT`（变更类操作需终端交互审批）、`PLAN`（只读模式）、`FULL_AUTO`（全自动无人值守模式）。
 
-> **学习主张**：“慢就是快”。本项目的核心不在于快速调包，而是通过手写上述每一个模块，深入理解大模型 Agent 底层运行的真正原理。
+> **真诚希望**：本项目能帮你深入理解大模型 Agent 底层运行的真正原理。
 
 ---
 
