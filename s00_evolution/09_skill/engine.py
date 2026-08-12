@@ -117,12 +117,13 @@ def run_agent_loop(user_input: str, registry: ToolRegistry, messages: list) -> l
     
     client = OpenAI(
         api_key=os.getenv("ANTHROPIC_API_KEY"),
-        base_url=os.getenv("ANTHROPIC_BASE_URL", "https://api.deepseek.com/v1")
+        base_url=os.getenv("ANTHROPIC_BASE_URL", "https://api.deepseek.com/v1") 
     )
     model_id = os.getenv("MODEL_ID", "deepseek-chat")
-    
-    memory_manager = MemoryManager(max_chars=64000)
-    
+
+    # DeepSeek 支持 128k 甚至更长的上下文，我们将压缩阈值提高到 100,000 字符
+    memory_manager = MemoryManager(max_chars=100000)
+
     # ----------------------------------------------------
     # 新增：初始化权限检查器 (这里可以根据需要修改模式)
     # ----------------------------------------------------
