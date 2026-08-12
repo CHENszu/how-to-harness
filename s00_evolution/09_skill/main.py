@@ -9,10 +9,11 @@ def main():
     print("  🛡️ 欢迎来到 Skill 按需加载机制测试 🛡️")
     print("=======================================")
     print("本节我们为 Agent 引入了 Skill（按需加载的扩展能力）机制。")
+    print("注意：当前已开启 FULL_AUTO 模式，所有工具将全自动执行，无需手动确认。")
     print("你可以尝试：")
     print(" 1. 问它：'列出你当前拥有的所有可用技能'") 
     print(" 2. 问它：'使用 algorithmic-art 技能，帮我写一段代码'")
-    print(" 3. 观察它是如何先调用 skills_list，再调用 skill_view 加载长指令的。")
+    print(" 3. 观察它是如何先调用 skills_list，再调用 skill_view 加载长指令，最后自动执行代码编写的。")
     print(" 4. 按 'q' 退出。")
     
     # 1. 加载环境变量

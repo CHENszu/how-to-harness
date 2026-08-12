@@ -126,7 +126,8 @@ def run_agent_loop(user_input: str, registry: ToolRegistry, messages: list) -> l
     # ----------------------------------------------------
     # 新增：初始化权限检查器 (这里可以根据需要修改模式)
     # ----------------------------------------------------
-    permission_settings = PermissionSettings(mode=PermissionMode.DEFAULT)
+    # 将默认模式修改为 FULL_AUTO，跳过所有的确认弹窗，实现全自动执行
+    permission_settings = PermissionSettings(mode=PermissionMode.FULL_AUTO)       
     permission_checker = PermissionChecker(permission_settings)
     print(f"  [System] 🛡️ 当前权限模式: {permission_settings.mode.value}")
     
