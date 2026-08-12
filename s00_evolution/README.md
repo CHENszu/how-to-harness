@@ -58,6 +58,7 @@
   - `07_long_term_memory`：实现跨会话的记忆持久化
   - `08_permission_control`：实现三级权限管控 (DEFAULT, PLAN, FULL_AUTO) 与审批挂起
   - `09_skill`：实现“渐进式披露”的 Skill 按需加载与知识挂载机制
+  - `10_hook`：实现基于生命周期事件与 LLM 动态评估的卡点质检（Hook）机制
 
 > 建议：按照 `s00_evolution` 目录的序号顺序学习，感受 Agent 框架是如何一步步从简陋走向完善的。
 
