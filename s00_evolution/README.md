@@ -43,3 +43,24 @@
 - **Harness 工程：围绕发动机，打造一台能够自主感知、决策并执行的全自动驾驶汽车。**
 
 本系列教程（how-to-harness）正是带你从零开始，通过代码手写这台“汽车”的每一个零部件，深度理解大模型 Agent 底层运行的真正原理。
+
+## 4. 学习路径与目录结构
+
+本项目包含两条学习主线：
+
+- **外层目录 (01-20)**：参照 `shareAI-lab/learn-claude-code` 构建的高阶应用，较为复杂，适合作为最终目标参考。
+- **内层目录 (`s00_evolution/`)**：这是我们的**核心学习沙箱**！我们将 `HKUDS/OpenHarness` 的源码拆解成了 10 个进阶模块，带你“造轮子”式地从零手搓一个完整的 Agent 引擎：
+  - `01_agent_loop`：实现基础的反应式循环 (While True + Tool Calls)
+  - `02_tools`：接入网络搜索和本地命令执行能力
+  - `03_web_search` / `04_web_fetch`：强化网络信息获取
+  - `05_sandbox`：实现隔离的代码执行环境
+  - `06_short_term_memory`：实现四级递进的上下文压缩策略
+  - `07_long_term_memory`：实现跨会话的记忆持久化
+  - `08_permission_control`：实现三级权限管控 (DEFAULT, PLAN, FULL_AUTO) 与审批挂起
+  - `09_skill`：实现“渐进式披露”的 Skill 按需加载与知识挂载机制
+
+> 建议：按照 `s00_evolution` 目录的序号顺序学习，感受 Agent 框架是如何一步步从简陋走向完善的。
+
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=auto&height=100&section=footer&text=how-to-harness&fontSize=30" />
+</div>
