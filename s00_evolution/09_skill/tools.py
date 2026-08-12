@@ -187,6 +187,9 @@ class WriteFileTool(BaseTool):
         print(f"  [WriteFile] 正在写入文件: `{file_path}`")
         
         try:
+            import os
+            # 自动创建不存在的父目录
+            os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
             return f"成功将内容写入 {file_path}"
