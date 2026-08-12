@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from tools import ToolRegistry, BashTool, WebSearchTool, SaveMemoryTool, WriteFileTool, SkillsListTool, SkillViewTool
+from tools import ToolRegistry, BashTool, WebSearchTool, SaveMemoryTool, WriteFileTool, ReadFileTool, SkillsListTool, SkillViewTool
 from engine import run_agent_loop
 from skills_loader import load_skills
 
@@ -27,6 +27,7 @@ def main():
     registry.register(BashTool())
     registry.register(SaveMemoryTool())  # 注入记忆写入工具
     registry.register(WriteFileTool())
+    registry.register(ReadFileTool())    # 注入读文件工具（防止找模板时卡死）
     
     # 加载 Skill
     skills_dir = os.path.join(os.path.dirname(__file__), "skills")

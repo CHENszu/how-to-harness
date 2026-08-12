@@ -174,9 +174,10 @@ def run_agent_loop(user_input: str, registry: ToolRegistry, messages: list) -> l
     tools = registry.to_api_tools()
 
     turn = 1
-    while True:
-        messages = memory_manager.auto_compact(messages, client, model_id)
-        
+    MAX_TURNS = 15 # 强制刹车，防止大模型陷入死循环
+    while turn <= MAX_TURNS:
+        messages = memory_manager.auto_compact(messages, client, model_id)      
+
         print(f"\n--- 🔄 第 {turn} 轮思考开始 ---")
         print("  [Agent] 正在思考...")
         
@@ -262,5 +263,8 @@ def run_agent_loop(user_input: str, registry: ToolRegistry, messages: list) -> l
         except Exception as e:
             print(f"\n[循环发生错误]: {e}")
             break
-            
+
+    if turn > MAX_TURNS:
+        print("\n[System] ⚠️ 达到最大思考轮数限制 (MAX_TURNS)，强制终止以防止死循环！")
+
     return messages

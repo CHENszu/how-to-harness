@@ -194,6 +194,28 @@ class WriteFileTool(BaseTool):
             return f"写入文件出错: {str(e)}"
 
 # ==========================================
+# 工具 4.5：读文件 (ReadFileTool) - 解决看模板卡死问题
+# ==========================================
+class ReadFileToolInput(BaseModel):
+    file_path: str = Field(description="要读取的文件绝对或相对路径")
+
+class ReadFileTool(BaseTool):
+    name = "read_file"
+    description = "读取本地文件的内容。当需要参考模板、代码或文档时使用此工具。"
+    input_model = ReadFileToolInput
+    is_read_only = True
+    
+    def execute(self, **kwargs) -> str:
+        args = self.input_model(**kwargs)
+        file_path = args.file_path
+        print(f"  [ReadFile] 正在读取文件: `{file_path}`")
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            return f"读取文件出错: {str(e)}"
+
+# ==========================================
 # 工具 5：列出可用技能 (SkillsListTool)
 # ==========================================
 class SkillsListToolInput(BaseModel):
@@ -244,5 +266,10 @@ class SkillViewTool(BaseTool):
         if not skill:
             return f"未找到名为 '{name}' 的技能。请先使用 skills_list 查看可用技能。"
             
-        return f"技能 [{skill.name}] 加载成功，以下是详细指令：\n\n{skill.content}"
+        import os
+        # 给大模型指明绝对路径，防止找 template 时迷路
+        skill_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "skills", skill.command_name))
+        path_hint = f"\n\n[系统重要提示：该技能的本地工作目录为 {skill_dir} ，如果需要读取 templates 等文件，请拼接此绝对路径！]"
+        
+        return f"技能 [{skill.name}] 加载成功，以下是详细指令：\n\n{skill.content}{path_hint}"
 
