@@ -41,6 +41,28 @@
 * **11_plugin**：生态兼容与插件机制。将 OpenHarness 打造为“改装车头”，无缝挂接官方 Claude 生态的“原厂货箱”（配置文件与 Skills）。
 * **12_mcp**：将 MCP 封装为 Agent 工具。屏蔽底层协议（Stdio / HTTP），使 Agent 能像调用本地工具一样直接调用 MCP 服务器。
 
+### 🚀 快速体验
+
+为了让你能够直接上手体验目前已经构建完成的核心 Agent 能力，我们在 `s00_evolution/agent` 目录下提供了一个完整的、可运行的单 Agent 演示版本（Mini Claude Code）。
+
+你可以通过以下命令快速启动：
+
+```bash
+# 1. 激活专属环境
+conda activate harness
+
+# 2. 进入 Agent 目录
+cd s00_evolution/agent
+
+# 3. 安装依赖（如果尚未安装）
+pip install -r requirements.txt
+
+# 4. 启动 Agent（启动后会提示输入 API Key）
+python main.py
+```
+
+详细的 API 配置（如使用 DeepSeek 等兼容模型）和进阶使用方法，请查阅 [Agent 体验指南](s00_evolution/agent/README.md#🚀-快速体验)。
+
 > **真诚希望**：本项目能帮你深入理解大模型 Agent 底层运行的真正原理。
 
 ---
