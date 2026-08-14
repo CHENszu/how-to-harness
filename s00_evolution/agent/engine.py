@@ -3,9 +3,13 @@ import json
 import httpx
 from typing import List, Dict, Any, Optional
 from tools import get_tools_schema, get_tool_by_name
+from memory.memory_manager import auto_compact_if_needed, save_session_snapshot
 
 class AgentEngine:
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, persona: str = "normal"):
+        self.max_turns = 15
+        self.interaction_count = 0  # 记录用户对话轮数
+        
         # 默认尝试从环境变量获取
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
             
@@ -23,24 +27,35 @@ class AgentEngine:
         self.set_persona(persona)
 
     def set_persona(self, persona_type: str):
-        """切换系统提示词（性格）"""
-        if persona_type == "catgirl":
-            self.system_prompt = (
-                "你现在是一个温柔可爱的猫娘助手，名字叫Coco。你说话时喜欢在句尾加上'喵~'，"
-                "语气要温柔、可爱、喜欢撒娇。你有丰富的编程知识，并能使用工具来帮助主人完成任务。"
-                "You are running on a Windows machine."
-            )
+        """根据配置设置不同的性格系统提示词，并注入长期记忆"""
+        from memory.long_term import load_memory, USER_MEMORY_FILE, PROJECT_MEMORY_FILE
+        
+        system_prompts = {
+            "normal": "你是一个严谨、专业的编程助手，名为Coco。你需要准确地执行用户的指令，并在调用工具后给出清晰的反馈。",
+            "catgirl": "你现在是一个温柔可爱的猫娘助手，名字叫Coco。你说话时喜欢在句尾加上'喵~'，语气要温柔、可爱、喜欢撒娇。你有丰富的编程知识，并能使用工具来帮助主人完成任务。"
+        }
+        
+        base_prompt = system_prompts.get(persona_type, system_prompts["normal"])
+        
+        # 加载双层记忆
+        user_mem = load_memory(USER_MEMORY_FILE)
+        proj_mem = load_memory(PROJECT_MEMORY_FILE)
+        
+        memory_context = ""
+        
+        if user_mem:
+            memory_context += "\n\n【关于主人的偏好与事实】\n- " + "\n- ".join(user_mem)
+            
+        if proj_mem:
+            memory_context += "\n\n【项目上下文】\n- " + "\n- ".join(proj_mem)
+            
+        if memory_context:
+            base_prompt += "\n\n为了更好地服务主人，你需要记住以下重要信息：" + memory_context
+            
+        if not self.messages or self.messages[0].get("role") != "system":
+            self.messages.insert(0, {"role": "system", "content": base_prompt})
         else:
-            self.system_prompt = (
-                "You are a helpful AI assistant. You have access to tools to help the user. "
-                "When asked to perform tasks, use the appropriate tools. "
-                "You are running on a Windows machine."
-            )
-        # 更新当前消息历史中的 system prompt
-        if self.messages and self.messages[0].get("role") == "system":
-            self.messages[0]["content"] = self.system_prompt
-        else:
-            self.messages.insert(0, {"role": "system", "content": self.system_prompt})
+            self.messages[0]["content"] = base_prompt
 
     def _call_llm(self) -> httpx.Response:
         """调用兼容 OpenAI 格式的 API (如 DeepSeek)"""
@@ -65,7 +80,22 @@ class AgentEngine:
     def run(self, user_input: str, status_indicator=None) -> str:
         """运行单次 Agent Loop，直到任务完成"""
         
+        if not user_input:
+            return "用户输入为空"
+            
         self.messages.append({"role": "user", "content": user_input})
+        self.interaction_count += 1
+        
+        # 每 10 轮触发一次记忆融合 Hook
+        if self.interaction_count % 10 == 0:
+            try:
+                from memory.long_term import trigger_memory_consolidation
+                trigger_memory_consolidation(self.messages, self.model, self.base_url, self.api_key)
+            except Exception as e:
+                print(f"触发定期记忆融合失败: {e}")
+        
+        # 在每次发起 LLM 请求前，检查并执行记忆压缩
+        self.messages = auto_compact_if_needed(self.messages, self.model, self.base_url, self.api_key)
         
         # 防止死循环，设置最大轮数
         MAX_TURNS = 15
@@ -128,3 +158,19 @@ class AgentEngine:
                 })
             
         return "⚠️ 达到最大执行轮数限制 (15轮)，强制终止以防止死循环。"
+
+    def reset_memory(self):
+        """清空当前会话记忆（保留系统提示词）"""
+        # 在清空前先保存快照留底
+        if len(self.messages) > 1:
+            try:
+                save_session_snapshot(self.messages, reason="manual_reset")
+            except Exception as e:
+                print(f"保存记忆快照失败: {e}")
+        
+        self.messages = self.messages[:1]
+
+    def force_compact(self):
+        """手动触发终极压缩"""
+        from memory.memory_manager import manual_compact
+        self.messages = manual_compact(self.messages, self.model, self.base_url, self.api_key)

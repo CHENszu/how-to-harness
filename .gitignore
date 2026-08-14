@@ -1,3 +1,7 @@
 .env
 .task_outputs/
 .transcripts/
+
+# Agent Config & Memory Data
+s00_evolution/agent/config.json
+s00_evolution/agent/memory/data/

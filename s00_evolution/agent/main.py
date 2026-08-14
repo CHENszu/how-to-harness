@@ -21,9 +21,10 @@ class SlashCommandCompleter(Completer):
     def __init__(self):
         self.commands = {
             '/new': '清空当前上下文记忆，开启全新对话',
+            '/compact': '手动将当前长对话压缩成摘要 (Full Compact)',
             '/tools': '显示当前已挂载的工具列表及说明',
             '/config': '查看当前运行配置 (模型、接口等)',
-            '/persona': '切换大模型的性格 (正常 / 猫娘)'
+            '/persona': '切换助手性格 (正常/猫娘)'
         }
 
     def get_completions(self, document, complete_event):
@@ -101,6 +102,17 @@ def main():
                 
             if user_input.lower() in ['exit', 'quit', '/exit', '/quit']:
                 console.print("👋 [bold blue]再见！[/bold blue]")
+                
+                # 退出前保存快照并提取长期记忆
+                if len(engine.messages) > 1:
+                    try:
+                        from memory.memory_manager import save_session_snapshot
+                        from memory.long_term import trigger_memory_consolidation
+                        save_session_snapshot(engine.messages, reason="exit")
+                        trigger_memory_consolidation(engine.messages, engine.model, engine.base_url, engine.api_key)
+                    except Exception as e:
+                        logger.error(f"保存记忆快照或提取长期记忆失败: {e}")
+                        
                 break
                 
             # 处理斜杠命令
@@ -110,6 +122,11 @@ def main():
                     # 重置 Agent 引擎的消息历史
                     engine.messages = [{"role": "system", "content": engine.system_prompt}]
                     console.print("✨ [bold green]记忆已清空，开启全新对话。[/bold green]")
+                    continue
+                
+                elif cmd == "/compact":
+                    with console.status("[bold yellow]正在启动后台摘要模型进行 Full Compact...[/bold yellow]", spinner="dots"):
+                        engine.force_compact()
                     continue
                 
                 elif cmd == "/tools":
@@ -173,6 +190,15 @@ def main():
             
         except (KeyboardInterrupt, EOFError):
             console.print("\n👋 [bold blue]再见！[/bold blue]")
+            # 退出前保存快照并提取长期记忆
+            if len(engine.messages) > 1:
+                try:
+                    from memory.memory_manager import save_session_snapshot
+                    from memory.long_term import trigger_memory_consolidation
+                    save_session_snapshot(engine.messages, reason="interrupt")
+                    trigger_memory_consolidation(engine.messages, engine.model, engine.base_url, engine.api_key)
+                except Exception as e:
+                    logger.error(f"保存记忆快照或提取长期记忆失败: {e}")
             break
         except Exception as e:
             console.print(f"\n❌ [bold red]发生未捕获的错误: {e}[/bold red]")
