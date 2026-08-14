@@ -2,13 +2,43 @@ import sys
 import os
 from dotenv import load_dotenv
 from engine import AgentEngine
+from tools import AVAILABLE_TOOLS
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.markdown import Markdown
+from rich.table import Table
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.styles import Style
 
 console = Console()
+
+class SlashCommandCompleter(Completer):
+    def __init__(self):
+        self.commands = {
+            '/new': '清空当前上下文记忆，开启全新对话',
+            '/tools': '显示当前已挂载的工具列表及说明',
+            '/config': '查看当前运行配置 (模型、接口等)'
+        }
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        if text.startswith('/'):
+            for cmd, desc in self.commands.items():
+                if cmd.startswith(text):
+                    yield Completion(
+                        cmd,
+                        start_position=-len(text),
+                        display=cmd,
+                        display_meta=desc
+                    )
+
+prompt_style = Style.from_dict({
+    'prompt': 'ansigreen bold',
+})
 
 def print_welcome():
     welcome_text = Text()
@@ -21,13 +51,7 @@ def print_welcome():
     welcome_text.append(": 网络搜索 (基于 DuckDuckGo)\n")
     welcome_text.append("  • ", style="dim")
     welcome_text.append("web_fetch", style="cyan")
-    welcome_text.append(": 抓取网页文本\n\n")
-    
-    welcome_text.append("输入 ", style="dim")
-    welcome_text.append("'exit'", style="bold red")
-    welcome_text.append(" 或 ", style="dim")
-    welcome_text.append("'quit'", style="bold red")
-    welcome_text.append(" 退出。", style="dim")
+    welcome_text.append(": 抓取网页文本\n")
 
     panel = Panel(
         welcome_text,
@@ -57,16 +81,56 @@ def main():
     # 初始化引擎
     with console.status("[bold green]正在初始化 Coco 引擎...[/bold green]", spinner="dots"):
         engine = AgentEngine()
+        
+    # 初始化交互式输入 Session
+    session = PromptSession(completer=SlashCommandCompleter(), style=prompt_style)
     
     while True:
         try:
-            user_input = console.input("\n[bold green]❯ You:[/bold green] ")
+            user_input = session.prompt("\n❯ You: ", style=prompt_style)
             if not user_input.strip():
                 continue
                 
-            if user_input.lower() in ['exit', 'quit']:
+            if user_input.lower() in ['exit', 'quit', '/exit', '/quit']:
                 console.print("👋 [bold blue]再见！[/bold blue]")
                 break
+                
+            # 处理斜杠命令
+            if user_input.startswith("/"):
+                cmd = user_input.strip().lower()
+                if cmd == "/new":
+                    # 重置 Agent 引擎的消息历史
+                    engine.messages = [{"role": "system", "content": engine.system_prompt}]
+                    console.print("✨ [bold green]记忆已清空，开启全新对话。[/bold green]")
+                    continue
+                
+                elif cmd == "/tools":
+                    # 显示可用工具列表
+                    table = Table(title="🔧 已挂载的工具列表", show_header=True, header_style="bold magenta")
+                    table.add_column("工具名称", style="cyan", width=20)
+                    table.add_column("功能描述", style="white")
+                    
+                    for t in AVAILABLE_TOOLS:
+                        table.add_row(t.name, t.description.strip().split('\n')[0]) # 只取第一行描述
+                    
+                    console.print(table)
+                    continue
+                
+                elif cmd == "/config":
+                    # 显示当前配置
+                    table = Table(title="⚙️ 当前运行配置", show_header=True, header_style="bold magenta")
+                    table.add_column("配置项", style="cyan")
+                    table.add_column("当前值", style="yellow")
+                    
+                    table.add_row("Model", engine.model)
+                    table.add_row("Base URL", engine.base_url)
+                    
+                    console.print(table)
+                    continue
+                
+                else:
+                    console.print(f"⚠️ [yellow]未知的命令: {cmd}。目前支持: /new, /tools, /config[/yellow]")
+                    continue
                 
             with console.status("[bold purple]🤔 Coco 正在思考及执行任务...[/bold purple]", spinner="dots"):
                 # 调用 Agent Loop
