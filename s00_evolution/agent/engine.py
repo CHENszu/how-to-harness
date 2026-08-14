@@ -30,6 +30,26 @@ class AgentEngine:
             {"role": "system", "content": self.system_prompt}
         ]
 
+    def set_persona(self, persona_type: str):
+        """切换系统提示词（性格）"""
+        if persona_type == "catgirl":
+            self.system_prompt = (
+                "你现在是一个温柔可爱的猫娘助手，名字叫Coco。你说话时喜欢在句尾加上'喵~'，"
+                "语气要温柔、可爱、喜欢撒娇。你有丰富的编程知识，并能使用工具来帮助主人完成任务。"
+                "You are running on a Windows machine."
+            )
+        else:
+            self.system_prompt = (
+                "You are a helpful AI assistant. You have access to tools to help the user. "
+                "When asked to perform tasks, use the appropriate tools. "
+                "You are running on a Windows machine."
+            )
+        # 更新当前消息历史中的 system prompt
+        if self.messages and self.messages[0].get("role") == "system":
+            self.messages[0]["content"] = self.system_prompt
+        else:
+            self.messages.insert(0, {"role": "system", "content": self.system_prompt})
+
     def _call_llm(self) -> httpx.Response:
         """调用兼容 OpenAI 格式的 API (如 DeepSeek)"""
         if not self.api_key:
@@ -50,7 +70,7 @@ class AgentEngine:
         with httpx.Client(timeout=60.0) as client:
             return client.post(self.base_url, headers=headers, json=payload)
 
-    def run(self, user_input: str) -> str:
+    def run(self, user_input: str, status_indicator=None) -> str:
         """运行单次 Agent Loop，直到任务完成"""
         
         self.messages.append({"role": "user", "content": user_input})
@@ -100,8 +120,8 @@ class AgentEngine:
                 tool = get_tool_by_name(tool_name)
                 if tool:
                     try:
-                        # 执行工具
-                        result_text = tool.execute(**tool_input)
+                        # 执行工具，将 status_indicator 透传给工具，方便挂起动画
+                        result_text = tool.execute(status_indicator=status_indicator, **tool_input)
                     except Exception as e:
                         result_text = f"工具执行异常: {str(e)}"
                 else:

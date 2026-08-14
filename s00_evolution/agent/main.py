@@ -21,7 +21,8 @@ class SlashCommandCompleter(Completer):
         self.commands = {
             '/new': '清空当前上下文记忆，开启全新对话',
             '/tools': '显示当前已挂载的工具列表及说明',
-            '/config': '查看当前运行配置 (模型、接口等)'
+            '/config': '查看当前运行配置 (模型、接口等)',
+            '/persona': '切换大模型的性格 (正常 / 猫娘)'
         }
 
     def get_completions(self, document, complete_event):
@@ -128,13 +129,29 @@ def main():
                     console.print(table)
                     continue
                 
-                else:
-                    console.print(f"⚠️ [yellow]未知的命令: {cmd}。目前支持: /new, /tools, /config[/yellow]")
+                elif cmd == "/persona":
+                    from rich.prompt import Prompt
+                    console.print("\n[bold cyan]请选择 Coco 的性格:[/bold cyan]")
+                    console.print("1. 正常 (专业助手)")
+                    console.print("2. 猫娘 (温柔可爱)")
+                    choice = Prompt.ask("输入序号", choices=["1", "2"], default="1")
+                    
+                    if choice == "1":
+                        engine.set_persona("normal")
+                        console.print("✨ [bold green]已切换为【正常】性格。[/bold green]")
+                    elif choice == "2":
+                        engine.set_persona("catgirl")
+                        console.print("✨ [bold magenta]已切换为【温柔猫娘】性格喵~[/bold magenta]")
                     continue
                 
-            with console.status("[bold purple]🤔 Coco 正在思考及执行任务...[/bold purple]", spinner="dots"):
+                else:
+                    console.print(f"⚠️ [yellow]未知的命令: {cmd}。目前支持: /new, /tools, /config, /persona[/yellow]")
+                    continue
+                
+            # 将 status 对象传递给 engine，以便内部工具调用时可以挂起/恢复
+            with console.status("[bold purple]🤔 Coco 正在思考及执行任务...[/bold purple]", spinner="dots") as status_indicator:
                 # 调用 Agent Loop
-                response = engine.run(user_input)
+                response = engine.run(user_input, status_indicator=status_indicator)
             
             console.print("\n[bold purple]🤖 Coco:[/bold purple]")
             console.print(Markdown(response))
