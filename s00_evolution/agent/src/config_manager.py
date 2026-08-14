@@ -1,7 +1,7 @@
 import json
 import os
 
-CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".coco", "config.json")
 
 def load_config() -> dict:
     """加载本地配置，如果不存在则返回默认配置"""

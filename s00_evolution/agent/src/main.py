@@ -1,9 +1,12 @@
 import sys
 import os
+import logging
 from dotenv import load_dotenv
 from engine import AgentEngine
 from tools import AVAILABLE_TOOLS
 from config_manager import load_config, save_config
+
+logger = logging.getLogger(__name__)
 
 from rich.console import Console
 from rich.panel import Panel

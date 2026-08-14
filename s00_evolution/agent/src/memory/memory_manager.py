@@ -5,7 +5,8 @@ from typing import List, Dict, Any
 from .token_estimation import estimate_message_tokens, get_autocompact_threshold
 
 MEMORY_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(MEMORY_DIR, "data")
+SRC_DIR = os.path.dirname(MEMORY_DIR)
+DATA_DIR = os.path.join(os.path.dirname(SRC_DIR), ".coco")
 SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
 
 if not os.path.exists(DATA_DIR):
