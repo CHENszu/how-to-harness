@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from engine import AgentEngine
 from tools import AVAILABLE_TOOLS
+from config_manager import load_config, save_config
 
 from rich.console import Console
 from rich.panel import Panel
@@ -67,6 +68,9 @@ def main():
     # 加载当前目录下的 .env 文件
     load_dotenv()
     
+    # 加载持久化配置
+    config_data = load_config()
+    
     print_welcome()
     
     # 检查并要求输入 API Key
@@ -81,7 +85,10 @@ def main():
     
     # 初始化引擎
     with console.status("[bold green]正在初始化 Coco 引擎...[/bold green]", spinner="dots"):
-        engine = AgentEngine()
+        engine = AgentEngine(
+            model=config_data.get("model"), 
+            persona=config_data.get("persona", "normal")
+        )
         
     # 初始化交互式输入 Session
     session = PromptSession(completer=SlashCommandCompleter(), style=prompt_style)
@@ -125,6 +132,7 @@ def main():
                     
                     table.add_row("Model", engine.model)
                     table.add_row("Base URL", engine.base_url)
+                    table.add_row("Persona", "猫娘 (catgirl)" if config_data.get("persona") == "catgirl" else "正常 (normal)")
                     
                     console.print(table)
                     continue
@@ -134,14 +142,20 @@ def main():
                     console.print("\n[bold cyan]请选择 Coco 的性格:[/bold cyan]")
                     console.print("1. 正常 (专业助手)")
                     console.print("2. 猫娘 (温柔可爱)")
-                    choice = Prompt.ask("输入序号", choices=["1", "2"], default="1")
+                    
+                    current_choice = "2" if config_data.get("persona") == "catgirl" else "1"
+                    choice = Prompt.ask("输入序号", choices=["1", "2"], default=current_choice)
                     
                     if choice == "1":
                         engine.set_persona("normal")
+                        config_data["persona"] = "normal"
                         console.print("✨ [bold green]已切换为【正常】性格。[/bold green]")
                     elif choice == "2":
                         engine.set_persona("catgirl")
+                        config_data["persona"] = "catgirl"
                         console.print("✨ [bold magenta]已切换为【温柔猫娘】性格喵~[/bold magenta]")
+                        
+                    save_config(config_data)
                     continue
                 
                 else:

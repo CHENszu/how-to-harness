@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from tools import get_tools_schema, get_tool_by_name
 
 class AgentEngine:
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, persona: str = "normal"):
         # 默认尝试从环境变量获取
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
             
@@ -19,16 +19,8 @@ class AgentEngine:
         else:
             self.base_url = "https://api.deepseek.com/v1/chat/completions"
         
-        self.system_prompt = (
-            "You are a helpful AI assistant. You have access to tools to help the user. "
-            "When asked to perform tasks, use the appropriate tools. "
-            "You are running on a Windows machine."
-        )
-        
-        # 消息历史，初始化时放入 system prompt
-        self.messages: List[Dict[str, Any]] = [
-            {"role": "system", "content": self.system_prompt}
-        ]
+        self.messages: List[Dict[str, Any]] = []
+        self.set_persona(persona)
 
     def set_persona(self, persona_type: str):
         """切换系统提示词（性格）"""
