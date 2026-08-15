@@ -6,9 +6,12 @@ from tools import get_tools_schema, get_tool_by_name
 from memory.memory_manager import auto_compact_if_needed, save_session_snapshot
 
 class AgentEngine:
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, persona: str = "normal"):
-        self.max_turns = 15
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, persona: str = "normal", allowed_tools: Optional[List[Any]] = None, max_turns: int = 30):
+        self.max_turns = max_turns
         self.interaction_count = 0  # 记录用户对话轮数
+        
+        # 支持工具隔离，如果不指定，默认使用全局工具
+        self.allowed_tools = allowed_tools
         
         # 默认尝试从环境变量获取
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -31,8 +34,9 @@ class AgentEngine:
         from memory.long_term import load_memory, USER_MEMORY_FILE, PROJECT_MEMORY_FILE
         
         system_prompts = {
-            "normal": "你是一个严谨、专业的编程助手，名为Coco。你需要准确地执行用户的指令，并在调用工具后给出清晰的反馈。",
-            "catgirl": "你现在是一个温柔可爱的猫娘助手，名字叫Coco。你说话时喜欢在句尾加上'喵~'，语气要温柔、可爱、喜欢撒娇。你有丰富的编程知识，并能使用工具来帮助主人完成任务。"
+            "normal": "你是一个严谨、专业的编程助手，名为Coco。你需要准确地执行用户的指令。\n\n**重要指令**：当你面对需要分析整个项目、阅读多个文件、或者执行宽泛的调研任务时（如'看下这个项目在干啥'），你**必须优先调用 `search_agent` 工具**将任务委派给子代理，不要自己手动去执行繁琐的 read 和 bash 操作。主代理应当专注于决策和与用户沟通。",
+            "catgirl": "你现在是一个温柔可爱的猫娘助手，名字叫Coco。你说话时喜欢在句尾加上'喵~'，语气要温柔、可爱、喜欢撒娇。你有丰富的编程知识，并能使用工具来帮助主人完成任务。\n\n**重要指令**：如果主人让你看一个复杂的项目或找很多资料，你**一定要优先调用 `search_agent` 工具**派小弟去干活喵~ 不要自己累坏了喵！",
+            "search_agent": "你是一个专门负责搜集信息、阅读代码和排查问题的 Search Sub-Agent。你的任务是利用手头的检索工具（如读文件、全局搜索、网页搜索等）深入探查信息。找到足够的信息后，请给出一份详尽、条理清晰的总结报告给主控 Agent，不要进行任何代码修改操作。你的输出将被程序解析，请直接输出最终的发现总结。"
         }
         
         base_prompt = system_prompts.get(persona_type, system_prompts["normal"])
@@ -70,9 +74,28 @@ class AgentEngine:
         payload = {
             "model": self.model,
             "messages": self.messages,
-            "tools": get_tools_schema(),
             "temperature": 0.0
         }
+        
+        # 如果指定了 allowed_tools，则动态生成 schema；否则使用全局 schema
+        if self.allowed_tools is not None:
+            tools_schema = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters
+                    }
+                }
+                for t in self.allowed_tools
+            ]
+            if tools_schema:
+                payload["tools"] = tools_schema
+        else:
+            schema = get_tools_schema()
+            if schema:
+                payload["tools"] = schema
         
         with httpx.Client(timeout=60.0) as client:
             return client.post(self.base_url, headers=headers, json=payload)
@@ -98,10 +121,9 @@ class AgentEngine:
         self.messages = auto_compact_if_needed(self.messages, self.model, self.base_url, self.api_key)
         
         # 防止死循环，设置最大轮数
-        MAX_TURNS = 15
         turn_count = 0
         
-        while turn_count < MAX_TURNS:
+        while turn_count < self.max_turns:
             turn_count += 1
             
             try:
@@ -139,7 +161,13 @@ class AgentEngine:
                 
                 print(f"🔧 [Agent] 正在调用工具: {tool_name} ...")
                 
-                tool = get_tool_by_name(tool_name)
+                # 优先从 allowed_tools 查找，否则退回全局查找
+                tool = None
+                if self.allowed_tools is not None:
+                    tool = next((t for t in self.allowed_tools if t.name == tool_name), None)
+                else:
+                    tool = get_tool_by_name(tool_name)
+                    
                 if tool:
                     try:
                         # 执行工具，将 status_indicator 透传给工具，方便挂起动画
@@ -157,7 +185,7 @@ class AgentEngine:
                     "content": str(result_text)
                 })
             
-        return "⚠️ 达到最大执行轮数限制 (15轮)，强制终止以防止死循环。"
+        return f"⚠️ 达到最大执行轮数限制 ({self.max_turns}轮)，强制终止以防止死循环。"
 
     def reset_memory(self):
         """清空当前会话记忆（保留系统提示词）"""

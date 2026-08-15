@@ -12,6 +12,8 @@ from .grep_tool import GrepTool
 # 类别7：任务规划与交互
 from .todo_write_tool import TodoWriteTool
 from .ask_user_question_tool import AskUserQuestionTool
+# 类别8：子代理委派
+from .search_agent_tool import SearchAgentTool
 
 # 工具注册表
 AVAILABLE_TOOLS = [
@@ -23,7 +25,8 @@ AVAILABLE_TOOLS = [
     GlobTool(),
     GrepTool(),
     TodoWriteTool(),
-    AskUserQuestionTool()
+    AskUserQuestionTool(),
+    SearchAgentTool()
 ]
 
 def get_tools_schema() -> List[Dict[str, Any]]:
