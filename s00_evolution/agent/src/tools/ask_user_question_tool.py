@@ -15,16 +15,19 @@ class AskUserQuestionTool(BaseTool):
         "required": ["question"]
     }
 
-    def execute(self, question: str, **kwargs) -> str:
-        # 注意：在真实的 OpenHarness 中，这个工具会触发特定的 UI 挂起逻辑。
-        # 在我们这个基础的 CLI 版本中，我们直接调用 python 内置的 input() 来阻塞当前线程并等待用户输入。
-        try:
-            print("\n" + "="*40)
-            print("🛑 [Agent 提问拦截]")
-            print(f"Agent: {question}")
-            print("="*40)
+    def execute(self, question: str, status_indicator=None, **kwargs) -> str:
+        if status_indicator and hasattr(status_indicator, 'suspend'):
+            status_indicator.suspend()
             
-            user_answer = input("请输入你的回答: ")
+        try:
+            from rich.console import Console
+            from rich.prompt import Prompt
+            console = Console()
+            console.print(f"\n[bold yellow]🛑 Agent 提问: {question}[/bold yellow]")
+            user_answer = Prompt.ask("[bold green]请输入你的回答[/bold green]")
             return f"用户的回答是: {user_answer}"
         except Exception as e:
             return f"获取用户回答失败: {str(e)}"
+        finally:
+            if status_indicator and hasattr(status_indicator, 'resume'):
+                status_indicator.resume()

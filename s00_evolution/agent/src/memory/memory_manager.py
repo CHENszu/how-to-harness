@@ -6,7 +6,7 @@ from .token_estimation import estimate_message_tokens, get_autocompact_threshold
 
 MEMORY_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.dirname(MEMORY_DIR)
-DATA_DIR = os.path.join(os.path.dirname(SRC_DIR), ".coco")
+DATA_DIR = os.path.join(MEMORY_DIR, "data")
 SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
 
 if not os.path.exists(DATA_DIR):
@@ -101,12 +101,30 @@ def manual_compact(messages: List[Dict[str, Any]], model: str, base_url: str, ap
     
     try:
         import httpx
-        headers = {"Authorization": f"Bearer {api_key}"}
+        is_anthropic = "anthropic.com" in base_url
+        
+        if is_anthropic:
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            }
+            payload["max_tokens"] = 1024
+        else:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "content-type": "application/json"
+            }
         
         with httpx.Client(timeout=60.0) as client:
             response = client.post(base_url, headers=headers, json=payload)
             response.raise_for_status()
-            summary = response.json()["choices"][0]["message"]["content"]
+            data = response.json()
+            
+            if is_anthropic:
+                summary = data["content"][0]["text"]
+            else:
+                summary = data["choices"][0]["message"]["content"]
             
             # 重新组装压缩后的 messages
             compacted_messages = []

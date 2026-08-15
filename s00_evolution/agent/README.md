@@ -53,21 +53,14 @@ python main.py
 ```text
 agent/
 ├── README.md       # 本项目说明与规划文档
-├── requirements.txt# 依赖文件 (httpx, pydantic)
-├── main.py         # 命令行交互入口 (CLI)，负责用户输入与输出打印
-├── engine.py       # 核心引擎 (Agent Loop)，负责与大模型通信及解析工具调用
-└── tools/          # 工具包目录 (模块化组织)
-    ├── __init__.py # 工具注册表与导出
-    ├── base.py     # 工具基类 (BaseTool)
-    ├── bash_tool.py
-    ├── web_search_tool.py
-    ├── web_fetch_tool.py
-    ├── file_read_tool.py
-    ├── file_write_tool.py
-    ├── glob_tool.py
-    ├── grep_tool.py
-    ├── todo_write_tool.py
-    └── ask_user_question_tool.py
+├── requirements.txt# 依赖文件
+├── tests/          # 单元测试与验证脚本
+└── src/            # 源代码目录
+    ├── main.py     # 命令行交互入口 (CLI)
+    ├── engine.py   # 核心引擎 (Agent Loop)
+    ├── config_manager.py # 配置管理
+    ├── memory/     # 记忆管理模块
+    └── tools/      # 工具包目录 (模块化组织)
 ```
 
 ## 🛠️ 已分配工具 (Tools)

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 MEMORY_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.dirname(MEMORY_DIR)
-DATA_DIR = os.path.join(os.path.dirname(SRC_DIR), ".coco")
+DATA_DIR = os.path.join(MEMORY_DIR, "data")
 
 # 确保 data 目录存在
 if not os.path.exists(DATA_DIR):
@@ -62,22 +62,25 @@ def trigger_memory_consolidation(engine_messages: List[Dict[str, Any]], model: s
                 
         # 构造 Hook 融合 Prompt
         prompt = f"""
-        请作为一个客观的记忆管理程序，分析以下对话历史，并更新长期记忆库。
+        请作为一个客观且严谨的记忆管理程序，分析以下对话历史，并更新长期记忆库。
         
-        【现有用户记忆】(关于用户的偏好、事实)：
+        【现有用户记忆】(仅包含用户个人的偏好、习惯、语言风格、工具偏好等跨项目通用的事实)：
         {json.dumps(old_user_memory, ensure_ascii=False)}
         
-        【现有项目记忆】(关于项目状态、代码上下文)：
+        【现有项目记忆】(仅包含当前项目的状态、架构、代码上下文、开发进度、遇到的具体bug等项目专有信息)：
         {json.dumps(old_project_memory, ensure_ascii=False)}
         
         【最新对话历史】：
         {history_text}
         
         任务要求（Hook机制）：
-        1. 提取：从最新对话中提取新的用户记忆和项目记忆。
-        2. 冲突覆盖：如果新信息与【现有记忆】发生冲突（如用户改变了主意、状态发生变化），必须以新信息为准，删除或覆盖旧记忆。
-        3. 融合提炼：如果某一类别的记忆条目过于碎片化或数量过多，请将它们融合成更精炼的总结性描述。
-        4. 保持不变：对于没有冲突的有效旧记忆，请原样保留。
+        1. 严格过滤：**不要记录毫无价值的日常寒暄、临时性的错误重试、或者已经完成且对未来无指导意义的临时操作。** 只提取“未来可能会再次用到”的重要信息（例如：用户的特定要求、项目的架构决定、未解决的长期问题）。
+        2. 严格区分：
+           - **user_memory** 只能记录用户的个人偏好（如“喜欢用中文”、“倾向于全自动执行”、“偏好类Claude Code UI”）。
+           - **project_memory** 只能记录当前项目的上下文（如“项目是一个Agent底座”、“使用了prompt_toolkit”）。
+           - 坚决杜绝两者之间的内容冗余和重叠！
+        3. 冲突覆盖：如果新信息与【现有记忆】发生冲突，必须以新信息为准，删除或覆盖旧记忆。
+        4. 融合提炼：将碎片化的记忆条目融合成更精炼的总结性描述。
         
         请严格以 JSON 格式输出更新后的完整记忆库，格式如下：
         {{
@@ -95,20 +98,34 @@ def trigger_memory_consolidation(engine_messages: List[Dict[str, Any]], model: s
             "temperature": 0.1
         }
         
-        # 深色模型通常支持 response_format，如果是兼容接口加了比较保险
-        if "deepseek" not in model.lower():
+        is_anthropic = "anthropic.com" in base_url
+        if is_anthropic:
+            payload["max_tokens"] = 1024
+        else:
             payload["response_format"] = {"type": "json_object"}
             
         try:
             import httpx
             import re
-            headers = {"Authorization": f"Bearer {api_key}"}
+            
+            if is_anthropic:
+                headers = {
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json"
+                }
+            else:
+                headers = {"Authorization": f"Bearer {api_key}"}
             
             with httpx.Client(timeout=45.0) as client:
                 response = client.post(base_url, headers=headers, json=payload)
                 response.raise_for_status()
+                data = response.json()
                 
-                result_text = response.json()["choices"][0]["message"]["content"]
+                if is_anthropic:
+                    result_text = data["content"][0]["text"]
+                else:
+                    result_text = data["choices"][0]["message"]["content"]
                 
                 # 增强的 JSON 解析
                 json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
@@ -129,6 +146,6 @@ def trigger_memory_consolidation(engine_messages: List[Dict[str, Any]], model: s
             with open(os.path.join(DATA_DIR, "memory_error.log"), "a", encoding="utf-8") as f:
                 f.write(f"融合长期记忆后台任务失败: {e}\n")
 
-    # 启动后台线程执行，daemon=False 保证主线程退出时会等待它执行完，但不会阻塞 UI 打印
-    thread = threading.Thread(target=_consolidation_task, daemon=False)
+    # 启动后台线程执行，daemon=True 保证主线程退出时立刻退出，不阻塞用户退出 (解决退出卡顿问题)
+    thread = threading.Thread(target=_consolidation_task, daemon=True)
     thread.start()

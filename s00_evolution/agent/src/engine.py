@@ -79,19 +79,20 @@ class AgentEngine:
         
         # 如果指定了 allowed_tools，则动态生成 schema；否则使用全局 schema
         if self.allowed_tools is not None:
-            tools_schema = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": t.name,
-                        "description": t.description,
-                        "parameters": t.parameters
+            if len(self.allowed_tools) > 0:
+                tools_schema = [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": t.name,
+                            "description": t.description,
+                            "parameters": t.parameters
+                        }
                     }
-                }
-                for t in self.allowed_tools
-            ]
-            if tools_schema:
+                    for t in self.allowed_tools
+                ]
                 payload["tools"] = tools_schema
+            # 如果 allowed_tools 为空列表 []，意味着明确禁止调用任何工具，不添加 tools 字段
         else:
             schema = get_tools_schema()
             if schema:
@@ -159,7 +160,11 @@ class AgentEngine:
                     
                 tool_id = tool_call["id"]
                 
-                print(f"🔧 [Agent] 正在调用工具: {tool_name} ...")
+                if status_indicator and hasattr(status_indicator, 'update'):
+                    status_indicator.update(f"🤔 Coco 正在调用工具: {tool_name} ...")
+                else:
+                    # 如果没有动画，则使用 \r 覆盖打印 (末尾加足够空格清除旧文字)
+                    print(f"\r🔧 [Agent] 正在调用工具: {tool_name} ...{' ' * 20}", end="", flush=True)
                 
                 # 优先从 allowed_tools 查找，否则退回全局查找
                 tool = None

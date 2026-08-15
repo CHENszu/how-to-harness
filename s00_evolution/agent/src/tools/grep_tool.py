@@ -39,8 +39,12 @@ class GrepTool(BaseTool):
             elif os.path.isdir(path):
                 search_pattern = include if include else "**/*"
                 full_pattern = os.path.join(path, search_pattern)
-                files = glob.glob(full_pattern, recursive=True)
-                files_to_search = [f for f in files if os.path.isfile(f)]
+                for f in glob.iglob(full_pattern, recursive=True):
+                    if os.path.isfile(f):
+                        files_to_search.append(f)
+                    if len(files_to_search) >= 500:
+                        results.append("[警告] 文件数过多，只搜索了前 500 个文件，请使用 include 参数缩小范围！")
+                        break
             
             for file_path in files_to_search:
                 try:

@@ -28,6 +28,12 @@ class SimpleStatusIndicator:
         clean_text = re.sub(r'\[.*?\]', '', text)
         self.status_context.update(f"[bold green]{clean_text}[/bold green]")
 
+    def suspend(self):
+        self.status_context.stop()
+
+    def resume(self):
+        self.status_context.start()
+
 
 def print_welcome():
     welcome_text = Text()
@@ -85,15 +91,13 @@ def main():
                 
             if user_input.lower() in ['exit', 'quit', '/exit', '/quit']:
                 console.print("👋 [bold blue]再见！[/bold blue]")
-                # 退出前保存快照并提取长期记忆
+                # 退出前保存快照 (移除耗时的长期记忆提取，解决退出卡顿问题)
                 if len(engine.messages) > 1:
                     try:
                         from memory.memory_manager import save_session_snapshot
-                        from memory.long_term import trigger_memory_consolidation
                         save_session_snapshot(engine.messages, reason="exit")
-                        trigger_memory_consolidation(engine.messages, engine.model, engine.base_url, engine.api_key)
                     except Exception as e:
-                        logger.error(f"保存记忆快照或提取长期记忆失败: {e}")
+                        logger.error(f"保存记忆快照失败: {e}")
                 break
             
             # 处理斜杠命令
@@ -161,15 +165,13 @@ def main():
             
         except (KeyboardInterrupt, EOFError):
             console.print("\n👋 [bold blue]再见！[/bold blue]")
-            # 退出前保存快照并提取长期记忆
+            # 退出前保存快照 (移除耗时的长期记忆提取，解决退出卡顿问题)
             if len(engine.messages) > 1:
                 try:
                     from memory.memory_manager import save_session_snapshot
-                    from memory.long_term import trigger_memory_consolidation
                     save_session_snapshot(engine.messages, reason="interrupt")
-                    trigger_memory_consolidation(engine.messages, engine.model, engine.base_url, engine.api_key)
                 except Exception as e:
-                    logger.error(f"保存记忆快照或提取长期记忆失败: {e}")
+                    logger.error(f"保存记忆快照失败: {e}")
             break
         except Exception as e:
             console.print(f"\n❌ [bold red]发生未捕获的错误: {e}[/bold red]")

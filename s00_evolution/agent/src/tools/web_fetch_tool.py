@@ -1,5 +1,5 @@
-import urllib.request
 import re
+import httpx
 from typing import Any, Dict
 from .base import BaseTool
 
@@ -19,13 +19,10 @@ class WebFetchTool(BaseTool):
 
     def execute(self, url: str, **kwargs) -> str:
         try:
-            req = urllib.request.Request(
-                url, 
-                data=None, 
-                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-            )
-            response = urllib.request.urlopen(req, timeout=10)
-            html = response.read().decode('utf-8', errors='replace')
+            with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+                response = client.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                response.raise_for_status()
+                html = response.text
             
             # 移除 script 和 style
             html = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', html, flags=re.IGNORECASE | re.DOTALL)

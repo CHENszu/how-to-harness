@@ -23,20 +23,20 @@ class BashTool(BaseTool):
     }
 
     def execute(self, command: str, status_indicator=None, **kwargs) -> str:
-        # 敏感命令检测：删除操作
-        danger_pattern = r'\b(rm|del|rmdir|rd|erase|remove-item)\b'
+        # 敏感命令检测：删除操作及高危操作
+        danger_pattern = r'\b(rm|del|rmdir|rd|erase|remove-item|format|mkfs|diskpart|cipher|Stop-Process|kill)\b'
         if re.search(danger_pattern, command, re.IGNORECASE):
             # 如果存在外层的加载动画，先暂停它，以免吞掉用户的键盘输入
-            if status_indicator:
-                status_indicator.stop()
+            if status_indicator and hasattr(status_indicator, 'suspend'):
+                status_indicator.suspend()
                 
             console.print(f"\n⚠️ [bold red]警告：拦截到敏感操作！[/bold red]")
-            console.print(f"Coco 想要执行以下删除命令：\n[bold yellow]{command}[/bold yellow]")
+            console.print(f"Coco 想要执行以下危险命令：\n[bold yellow]{command}[/bold yellow]")
             is_confirmed = Confirm.ask("[bold red]是否允许执行此命令？[/bold red]", default=False)
             
             # 恢复加载动画
-            if status_indicator:
-                status_indicator.start()
+            if status_indicator and hasattr(status_indicator, 'resume'):
+                status_indicator.resume()
             
             if not is_confirmed:
                 return f"执行被拦截：用户拒绝了该操作 ({command})。"

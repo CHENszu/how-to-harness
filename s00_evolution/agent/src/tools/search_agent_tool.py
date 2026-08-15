@@ -43,17 +43,22 @@ class SearchAgentTool(BaseTool):
             persona="search_agent",
             allowed_tools=allowed_tools,
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
-            model=os.environ.get("MODEL_NAME", "deepseek-chat")
+            model=os.environ.get("MODEL_NAME", "deepseek-chat"),
+            max_turns=10
         )
         
-        print(f"\n🚀 [Sub-Agent] 正在启动 Search Agent 深入探查...")
-        print(f"🎯 [Sub-Agent 任务]: {task_description}")
+        if kwargs.get("status_indicator") and hasattr(kwargs.get("status_indicator"), 'update'):
+            kwargs.get("status_indicator").update("🚀 正在启动 Search Agent 深入探查...")
+        else:
+            print(f"\n🚀 [Sub-Agent] 正在启动 Search Agent 深入探查...")
+            print(f"🎯 [Sub-Agent 任务]: {task_description}")
         
         try:
             # 传递 status_indicator (如果有)
             status_indicator = kwargs.get("status_indicator")
             result = sub_agent.run(task_description, status_indicator=status_indicator)
-            print(f"✅ [Sub-Agent] 探查完毕，结果已返回给主 Agent。")
+            if not status_indicator:
+                print(f"\n✅ [Sub-Agent] 探查完毕，结果已返回给主 Agent。")
             return f"[Search Agent 汇报结果]:\n{result}"
         except Exception as e:
             return f"[Search Agent 运行出错]: {str(e)}"
