@@ -17,6 +17,7 @@ class AgentEngine:
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
             
         self.model = model or os.environ.get("MODEL_NAME", "deepseek-chat")
+        self.persona = persona
         
         # 允许通过环境变量覆盖 base_url（例如使用 deepseek 兼容接口）
         base_url = os.environ.get("ANTHROPIC_BASE_URL")
@@ -161,10 +162,12 @@ class AgentEngine:
                 tool_id = tool_call["id"]
                 
                 if status_indicator and hasattr(status_indicator, 'update'):
-                    status_indicator.update(f"🤔 Coco 正在调用工具: {tool_name} ...")
+                    agent_name = "🔍 Search Agent" if self.persona == "search_agent" else "🤔 Coco"
+                    status_indicator.update(f"{agent_name} 正在调用工具: {tool_name} ...")
                 else:
                     # 如果没有动画，则使用 \r 覆盖打印 (末尾加足够空格清除旧文字)
-                    print(f"\r🔧 [Agent] 正在调用工具: {tool_name} ...{' ' * 20}", end="", flush=True)
+                    agent_name = "Search Agent" if self.persona == "search_agent" else "Coco"
+                    print(f"\r🔧 [{agent_name}] 正在调用工具: {tool_name} ...{' ' * 20}", end="", flush=True)
                 
                 # 优先从 allowed_tools 查找，否则退回全局查找
                 tool = None
