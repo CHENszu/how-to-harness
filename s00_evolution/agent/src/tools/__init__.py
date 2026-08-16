@@ -17,8 +17,9 @@ from .search_agent_tool import SearchAgentTool
 # 类别9：技能加载 (渐进式披露)
 from .skills_list_tool import SkillsListTool
 from .skill_view_tool import SkillViewTool
+from .mcp_client_tool import MCPClientWrapper, DynamicMCPTool
 
-# 工具注册表
+# 预定义的静态工具
 AVAILABLE_TOOLS = [
     BashTool(),
     WebSearchTool(),
@@ -33,6 +34,9 @@ AVAILABLE_TOOLS = [
     SkillsListTool(),
     SkillViewTool()
 ]
+
+# 用于存放动态挂载的 MCP 工具
+# MCP 工具会在 AgentEngine 初始化时通过 asyncio 异步加载，然后添加到 AVAILABLE_TOOLS 中
 
 def get_tools_schema() -> List[Dict[str, Any]]:
     """获取适用于 LLM 的 tools 定义"""

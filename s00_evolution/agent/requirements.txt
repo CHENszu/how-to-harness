@@ -5,3 +5,5 @@ tiktoken
 duckduckgo-search
 rich
 prompt_toolkit
+mcp
+nest-asyncio

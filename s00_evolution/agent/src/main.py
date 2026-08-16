@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import asyncio
 from dotenv import load_dotenv
 from engine import AgentEngine
 from tools import AVAILABLE_TOOLS
@@ -86,6 +87,16 @@ def main():
             model=config_data.get("model"), 
             persona=config_data.get("persona", "normal")
         )
+        
+        # 获取当前运行的事件循环，如果没有则创建一个新的
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        # 异步初始化 Engine（挂载 MCP 等）
+        loop.run_until_complete(engine.init_async())
         
     # 设置斜杠命令补全器
     command_completer = WordCompleter(

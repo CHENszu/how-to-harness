@@ -1,17 +1,33 @@
 import os
 import json
 import httpx
+import asyncio
 from typing import List, Dict, Any, Optional
-from tools import get_tools_schema, get_tool_by_name
+from tools import get_tools_schema, get_tool_by_name, AVAILABLE_TOOLS
+from tools.mcp_client_tool import MCPClientWrapper, DynamicMCPTool
 from memory.memory_manager import auto_compact_if_needed, save_session_snapshot
 
 class AgentEngine:
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, persona: str = "normal", allowed_tools: Optional[List[Any]] = None, max_turns: int = 30):
+    def __init__(self, 
+                 api_key: Optional[str] = None, 
+                 model: Optional[str] = None,
+                 persona: str = "normal",
+                 session_id: Optional[str] = None, 
+                 allowed_tools: Optional[List[Any]] = None,
+                 max_turns: int = 30):
         self.max_turns = max_turns
+        self.session_id = session_id
+        # 初始化内部状态
+        self.total_tokens_used = 0
         self.interaction_count = 0  # 记录用户对话轮数
         
+        # 此处不进行网络请求或异步操作，只是初始化状态
+        self.mcp_client = None
+        self.mcp_tools_loaded = False
+        self.mcp_dynamic_tools = []
+
         # 支持工具隔离，如果不指定，默认使用全局工具
-        self.allowed_tools = allowed_tools
+        self.allowed_tools = allowed_tools if allowed_tools is not None else AVAILABLE_TOOLS.copy()
         
         # 默认尝试从环境变量获取
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -29,6 +45,54 @@ class AgentEngine:
         
         self.messages: List[Dict[str, Any]] = []
         self.set_persona(persona)
+
+    async def init_async(self):
+        """异步初始化：挂载 MCP 工具"""
+        if self.mcp_tools_loaded:
+            return
+            
+        print("\n[MCP] 正在连接到 GitHub MCP Server...")
+        try:
+            # 确保环境变量中有 PAT
+            import os
+            from dotenv import load_dotenv
+            load_dotenv()
+            
+            env = os.environ.copy()
+            if "GITHUB_PERSONAL_ACCESS_TOKEN" not in env:
+                print("[MCP] ⚠️ 未找到 GITHUB_PERSONAL_ACCESS_TOKEN 环境变量，GitHub MCP 可能无法正常工作。")
+                
+            # 初始化 MCP Client，使用 npx 启动官方 github server
+            # 注意：这要求机器上安装了 Node.js
+            self.mcp_client = MCPClientWrapper(
+                server_command="npx",
+                server_args=["-y", "@modelcontextprotocol/server-github"],
+                env=env
+            )
+            
+            await self.mcp_client.connect()
+            mcp_tools = await self.mcp_client.get_tools()
+            
+            # 将 MCP 工具包装并注册到动态工具列表中
+            for t_info in mcp_tools:
+                dynamic_tool = DynamicMCPTool(self.mcp_client, t_info)
+                self.mcp_dynamic_tools.append(dynamic_tool)
+                
+                # 如果存在隔离允许工具列表，也同步追加
+                if self.allowed_tools is not None:
+                    self.allowed_tools.append(dynamic_tool)
+                    
+            self.mcp_tools_loaded = True
+            print(f"[MCP] GitHub MCP Server 连接成功！共挂载了 {len(mcp_tools)} 个工具。")
+            
+        except Exception as e:
+            print(f"[MCP] 连接 MCP Server 失败: {e}")
+            self.mcp_tools_loaded = False
+            
+    async def cleanup(self):
+        """清理资源"""
+        if self.mcp_client:
+            await self.mcp_client.cleanup()
 
     def set_persona(self, persona_type: str):
         """根据配置设置不同的性格系统提示词，并注入长期记忆"""
@@ -95,7 +159,18 @@ class AgentEngine:
                 payload["tools"] = tools_schema
             # 如果 allowed_tools 为空列表 []，意味着明确禁止调用任何工具，不添加 tools 字段
         else:
-            schema = get_tools_schema()
+            base_schema = get_tools_schema()
+            schema = list(base_schema) if base_schema else []
+            # 追加动态 MCP 工具的 Schema
+            for dt in self.mcp_dynamic_tools:
+                schema.append({
+                    "type": "function",
+                    "function": {
+                        "name": dt.name,
+                        "description": dt.description,
+                        "parameters": dt.parameters
+                    }
+                })
             if schema:
                 payload["tools"] = schema
         
@@ -174,7 +249,10 @@ class AgentEngine:
                 if self.allowed_tools is not None:
                     tool = next((t for t in self.allowed_tools if t.name == tool_name), None)
                 else:
-                    tool = get_tool_by_name(tool_name)
+                    # 先在动态工具中查找
+                    tool = next((t for t in self.mcp_dynamic_tools if t.name == tool_name), None)
+                    if not tool:
+                        tool = get_tool_by_name(tool_name)
                     
                 if tool:
                     try:

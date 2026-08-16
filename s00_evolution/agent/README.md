@@ -100,7 +100,25 @@ agent/
 - [x] **Phase 3: 技能扩展 (Skills)** 
   - 引入外部第三方技能库 (`skills/`)。
   - 实现基于渐进式披露的技能按需加载机制 (Tier 1 发现 + Tier 2 深入)。
-- [ ] **Phase 4: 插件与生态 (Plugins & MCP)** (待定)
+- [x] **Phase 4: 插件与生态 (Plugins & MCP)** (已完成)
   - 接入 MCP (Model Context Protocol) 协议支持。
+  - 在 `src/tools/mcp_client_tool.py` 中实现了轻量级的 MCP Client。
+  - 支持通过 `stdio` 与标准 MCP Server（如 GitHub MCP Server）进行通信。
+  - **动态工具挂载**：能够将 MCP Server 暴露的工具动态注册为 Agent 的可用工具（如 `search_repositories`, `create_issue` 等）。
+  - （当前内置支持 `@modelcontextprotocol/server-github`，只需在 `.env` 中配置 `GITHUB_PERSONAL_ACCESS_TOKEN` 即可解锁 26+ 项 GitHub 操作能力）。
+
+## Phase 5: 高级多智能体协同与权限控制 (待定)
+
+目标：从单体全能 Agent 演进为高度专业化、可控的多 Agent 协作网络。
+
+* **[ ] 多智能体网络 (Multi-Agent Swarm)**
+  - 引入专职的 Planner Agent (负责任务拆解与路由) 和 Worker Agents (如 Coder, Reviewer, Researcher)。
+  - 实现 Agent 之间的消息传递与状态共享协议。
+* **[ ] 细粒度权限沙盒 (Permission & Sandbox)**
+  - 实现类似于 `PermissionMode.FULL_AUTO` 和 `ASK_USER` 的权限分级机制。
+  - 对于敏感操作（如文件删除、重要系统命令执行、Git Push 等），强制进入拦截模式，需要用户在终端二次确认 (`y/N`)。
+* **[ ] 动态 MCP Server 管理**
+  - 不再硬编码启动单个 MCP Server，而是通过统一的 `mcp_servers.json` 配置文件管理多个 Server (如 GitHub, SQLite, FileSystem)。
+  - 实现 Server 的热插拔与按需启动机制。
 
 > **注**：后续增加任何新任务或模块，都会优先在此 README 中更新规划。
