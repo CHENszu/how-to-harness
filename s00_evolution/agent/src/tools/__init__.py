@@ -14,6 +14,9 @@ from .todo_write_tool import TodoWriteTool
 from .ask_user_question_tool import AskUserQuestionTool
 # 类别8：子代理委派
 from .search_agent_tool import SearchAgentTool
+# 类别9：技能加载 (渐进式披露)
+from .skills_list_tool import SkillsListTool
+from .skill_view_tool import SkillViewTool
 
 # 工具注册表
 AVAILABLE_TOOLS = [
@@ -26,7 +29,9 @@ AVAILABLE_TOOLS = [
     GrepTool(),
     TodoWriteTool(),
     AskUserQuestionTool(),
-    SearchAgentTool()
+    SearchAgentTool(),
+    SkillsListTool(),
+    SkillViewTool()
 ]
 
 def get_tools_schema() -> List[Dict[str, Any]]:

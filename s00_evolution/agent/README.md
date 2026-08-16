@@ -55,6 +55,8 @@ agent/
 ├── README.md       # 本项目说明与规划文档
 ├── requirements.txt# 依赖文件
 ├── tests/          # 单元测试与验证脚本
+├── .coco/          # (运行时生成) 统一存储配置文件、短时会话快照与长时记忆
+├── skills/         # 第三方技能库 (按需加载)
 └── src/            # 源代码目录
     ├── main.py     # 命令行交互入口 (CLI)
     ├── engine.py   # 核心引擎 (Agent Loop)
@@ -81,14 +83,24 @@ agent/
 8. **`todo_write`**: 管理 Markdown 格式的待办事项清单 (TODOs.md)。
 9. **`ask_user_question`**: 遇到歧义时，主动挂起并向人类提问。
 
+**子代理委派 (Sub-Agent)**
+10. **`search_agent`**: 启动专职检索与代码分析的子代理，执行宽泛的调研任务。
+
+**技能加载 (Skills & Progressive Disclosure)**
+11. **`skills_list`**: 扫描 `skills/` 目录，读取 YAML 元数据返回可用技能列表 (Tier 1 按需加载)。
+12. **`skill_view`**: 读取指定技能的完整 `SKILL.md` 文档内容 (Tier 2 深入加载)。
+
 ## 🗺️ 演进路线 (Roadmap)
-- [ ] **Phase 1: 基础底座** (当前任务)
-  - 实现 `tools.py` 中的三个基础工具。
-  - 实现 `engine.py` 中的 Agent Loop（包含提示词构建、API 调用、响应解析）。
-  - 实现 `main.py` 的终端交互。
-- [ ] **Phase 2: 记忆与状态管理** (待定)
-  - 引入短时记忆压缩（解决 Prompt 太长的问题）。
-- [ ] **Phase 3: 技能扩展 (Skills)** (待定)
-  - 支持从外部 Markdown 加载技能指令。
+- [x] **Phase 1: 基础底座** 
+  - 实现基础工具、Agent Loop 与终端交互。
+- [x] **Phase 2: 记忆与状态管理** 
+  - 引入短时记忆自动压缩机制。
+  - 实现双层长时记忆（用户偏好与项目上下文）的提取与融合 Hook。
+  - 统一运行时数据存储路径至 `.coco/` 目录。
+- [x] **Phase 3: 技能扩展 (Skills)** 
+  - 引入外部第三方技能库 (`skills/`)。
+  - 实现基于渐进式披露的技能按需加载机制 (Tier 1 发现 + Tier 2 深入)。
+- [ ] **Phase 4: 插件与生态 (Plugins & MCP)** (待定)
+  - 接入 MCP (Model Context Protocol) 协议支持。
 
 > **注**：后续增加任何新任务或模块，都会优先在此 README 中更新规划。

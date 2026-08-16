@@ -26,13 +26,17 @@ class SearchAgentTool(BaseTool):
         from .grep_tool import GrepTool
         from .web_search_tool import WebSearchTool
         from .web_fetch_tool import WebFetchTool
+        from .skills_list_tool import SkillsListTool
+        from .skill_view_tool import SkillViewTool
         
         allowed_tools = [
             FileReadTool(),
             GlobTool(),
             GrepTool(),
             WebSearchTool(),
-            WebFetchTool()
+            WebFetchTool(),
+            SkillsListTool(),
+            SkillViewTool()
         ]
         
         # 实例化子代理引擎，赋予专属的 search_agent persona，并限制其可用工具
