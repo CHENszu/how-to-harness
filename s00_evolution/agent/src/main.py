@@ -13,7 +13,11 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.markdown import Markdown
 from rich.table import Table
-from rich.prompt import Prompt
+
+# 引入 prompt_toolkit 用于实现命令补全
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.formatted_text import HTML
 
 console = Console()
 
@@ -83,13 +87,23 @@ def main():
             persona=config_data.get("persona", "normal")
         )
         
+    # 设置斜杠命令补全器
+    command_completer = WordCompleter(
+        ['/new', '/compact', '/tools', '/config', '/persona', '/exit'],
+        ignore_case=True
+    )
+    
+    # 初始化 prompt_toolkit 的 session
+    session = PromptSession(completer=command_completer)
+        
     while True:
         try:
-            user_input = console.input("\n[bold green]❯ You:[/bold green] ").strip()
+            # 使用 prompt_toolkit 替代 console.input()
+            user_input = session.prompt(HTML("<b><ansigreen>❯ You:</ansigreen></b> ")).strip()
             if not user_input:
                 continue
                 
-            if user_input.lower() in ['exit', 'quit', '/exit', '/quit']:
+            if user_input.lower() in ['exit', 'quit', '/exit']:
                 console.print("👋 [bold blue]再见！[/bold blue]")
                 # 退出前保存快照 (移除耗时的长期记忆提取，解决退出卡顿问题)
                 if len(engine.messages) > 1:
@@ -138,6 +152,7 @@ def main():
                     console.print("1. 正常 (专业助手)")
                     console.print("2. 猫娘 (温柔可爱)")
                     current_choice = "2" if config_data.get("persona") == "catgirl" else "1"
+                    from rich.prompt import Prompt
                     choice = Prompt.ask("输入序号", choices=["1", "2"], default=current_choice)
                     if choice == "1":
                         engine.set_persona("normal")
@@ -151,7 +166,7 @@ def main():
                     continue
                 
                 else:
-                    console.print(f"⚠️ [yellow]未知的命令: {cmd}。目前支持: /new, /compact, /tools, /config, /persona[/yellow]")
+                    console.print(f"⚠️ [yellow]未知的命令: {cmd}。目前支持: /new, /compact, /tools, /config, /persona, /exit[/yellow]")
                     continue
                 
             # 执行 Agent 任务
