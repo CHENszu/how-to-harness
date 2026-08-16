@@ -20,5 +20,6 @@ def load_config() -> dict:
 
 def save_config(config_data: dict):
     """保存配置到本地文件"""
+    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=4, ensure_ascii=False)

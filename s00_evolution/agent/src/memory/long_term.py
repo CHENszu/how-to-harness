@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 MEMORY_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.dirname(MEMORY_DIR)
-DATA_DIR = os.path.join(MEMORY_DIR, "data")
+PROJECT_ROOT = os.path.dirname(SRC_DIR)
+DATA_DIR = os.path.join(PROJECT_ROOT, ".coco")
 
 # 确保 data 目录存在
 if not os.path.exists(DATA_DIR):

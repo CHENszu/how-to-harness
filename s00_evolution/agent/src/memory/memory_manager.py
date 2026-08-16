@@ -6,7 +6,8 @@ from .token_estimation import estimate_message_tokens, get_autocompact_threshold
 
 MEMORY_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.dirname(MEMORY_DIR)
-DATA_DIR = os.path.join(MEMORY_DIR, "data")
+PROJECT_ROOT = os.path.dirname(SRC_DIR)
+DATA_DIR = os.path.join(PROJECT_ROOT, ".coco")
 SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
 
 if not os.path.exists(DATA_DIR):
