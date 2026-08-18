@@ -21,22 +21,40 @@ conda activate harness
 pip install -r requirements.txt
 ```
 
-### 2. API 配置
+### 2. API 配置与申请指南
 
-Agent 支持原生的 Anthropic API，也支持兼容 OpenAI 格式的其他大模型（如 DeepSeek 等）。
-在 `agent` 目录下，创建一个 `.env` 文件（或直接复制 `.env.example`，如果有的话），并根据你的情况配置以下环境变量：
+在 `agent` 目录下，创建一个 `.env` 文件（或直接复制 `.env.example`，如果有的话），并根据你的情况配置以下环境变量。
+**注意：本项目只有大模型 API 是必填项，其余均为选填，不填也不影响 Agent 基础运行。**
 
-**方式一：使用原生 Anthropic Claude**
+#### 🔴 必填项：大模型 API Key
+Agent 核心引擎需要大模型驱动。支持原生 Anthropic Claude，也支持兼容 OpenAI 格式的模型（如 DeepSeek）。
+- **Anthropic Claude**: 在 [Anthropic Console](https://console.anthropic.com/) 申请。
+- **DeepSeek**: 在 [DeepSeek 开放平台](https://platform.deepseek.com/) 申请。
+
+**配置示例（二选一）：**
 ```env
+# 方式一：使用原生 Anthropic Claude
 ANTHROPIC_API_KEY=sk-ant-api03-xxx...
-```
 
-**方式二：使用兼容格式的模型（如 DeepSeek）**
-```env
+# 方式二：使用兼容格式的模型（如 DeepSeek，需配置 BASE_URL）
 ANTHROPIC_API_KEY=sk-xxxxxx...
 ANTHROPIC_BASE_URL=https://api.deepseek.com/v1
 ```
 *(注：如果配置了 `ANTHROPIC_BASE_URL`，系统会自动将请求端点路由至 `/chat/completions` 并使用 `Bearer` 认证方式进行适配。)*
+
+#### 🟢 选填项：高级功能 API Key
+以下配置用于解锁特定的高级工具或技能，如果不填，相关工具会自动降级为免费方案或仅该工具不可用。
+
+1. **Google 搜索 API (`SERPAPI_API_KEY`)**
+   - **用途**：提供高质量的网络搜索能力 (`web_search` 工具)。
+   - **申请地址**：[SerpApi 官网](https://serpapi.com/)。注册后每月有 100 次免费额度。
+   - **降级机制**：如果不配置此项，Agent 会自动降级使用免费的 DuckDuckGo 搜索，无需任何 Key 也能联网。
+   - **配置示例**：`SERPAPI_API_KEY=ff03...`
+
+2. **GitHub Token (`GITHUB_PERSONAL_ACCESS_TOKEN`)**
+   - **用途**：仅在使用 GitHub MCP Server 插件时需要，用于让 Agent 读取代码仓库、管理 Issue 等。
+   - **申请地址**：[GitHub Developer Settings -> Personal access tokens](https://github.com/settings/tokens)。
+   - **配置示例**：`GITHUB_PERSONAL_ACCESS_TOKEN=github_pat_...`
 
 ### 3. 启动 Agent
 
